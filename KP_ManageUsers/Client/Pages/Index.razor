@@ -1,0 +1,458 @@
+﻿@page "/"
+@using System.Text.Json
+
+<h1>Manage Users</h1>
+<br />
+<div class="DIVManageContainer">
+    <label>Access Groups</label>
+    <br />
+    <br />
+    <table>
+        <thead>
+            <tr>
+                <td>Group Name</td>
+                <td>Level</td>
+                <td>Total Users In Group</td>
+            </tr>
+        </thead>
+        @if (accessGroupList != null)
+        {
+            <tbody>
+                @foreach (var item in accessGroupList)
+                {
+                    <tr>
+                        <td>@item.Name</td>
+                        <td>@item.Level</td>
+                        <td>@(userGroupList.Where(x => x.AccessGroupID == item.AccessGroupID).Count())</td>
+                    </tr>
+                }
+            </tbody>
+        }
+    </table>
+</div>
+<br />
+<div class="DIVManageContainer">
+    <div class="row">
+        <div class="col">
+            <label>Users</label>
+        </div>
+        <div class="col">
+            <button style="width: 100px; float: right;" @onclick=AddUser_Click>Add User</button>
+        </div>
+    </div>
+    <br />
+    <table>
+        <thead>
+            <tr>
+                <td>First Name</td>
+                <td>Last Name</td>
+                <td>Cell No</td>
+                <td>Email</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </thead>
+        @if (userList != null)
+        {
+            <tbody>
+                @foreach (var item in userList)
+                {
+                    <tr>
+                        <td>@item.FirstName</td>
+                        <td>@item.LastName</td>
+                        <td>@item.CellNo</td>
+                        <td>@item.Email</td>
+                        <td style="text-align: center;">
+                            <i class="oi oi-pencil manageIcon" title="Edit" @onclick=@(async () => UpdateUser_Click(item))></i>
+                        </td>
+                        <td style="text-align: center;">
+                            <i class="oi oi-trash manageIcon" title="Remove" @onclick=@(async () => RemoveUser_Click(item.Id))></i>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        }
+    </table>
+    @if (userList != null)
+    {
+        <br />
+        <div class="row">
+            <div class="col">
+                <span style="font-weight: bold; float: right;">Total Rows: @userList.Count</span>
+            </div>
+        </div>
+    }
+</div>
+<br />
+<div class="DIVManageContainer">
+    <div class="row">
+        <div class="col">
+            <label>User Groups</label>
+        </div>
+        <div class="col">
+            <button style="width: 200px; float: right;" @onclick=AddUserGroup_Click>Assign User To Group</button>
+        </div>
+    </div>
+    <br />
+    <table>
+        <thead>
+            <tr>
+                <td>Group Name</td>
+                <td>User Email</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </thead>
+        @if (userGroupList != null)
+        {
+            <tbody>
+                @foreach (var item in userGroupList)
+                {
+                    <tr>
+                        <td>@item.AccessGroup.Name</td>
+                        <td>@item.User.Email</td>
+                        <td style="text-align: center;">
+                            <i class="oi oi-pencil manageIcon" title="Edit" @onclick=@(async () => UpdateUserGroup_Click(item))></i>
+                        </td>
+                        <td style="text-align: center;">
+                            <i class="oi oi-trash manageIcon" title="Remove" @onclick=@(async () => RemoveUserGroup_Click(item.Id))></i>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        }
+    </table>
+</div>
+
+@if (showUserPopup)
+{
+    <div class="modal" style="display:block;">
+        <div class="PopupCentered">
+            <div class="PopupCenteredHelper">
+                <div class="modal-dialog" style="max-width: 500px;">
+                    <div class="modal-content">
+                        <EditForm Model="@user_Model">
+                            <DataAnnotationsValidator />
+                            <div class="modal-header">
+                                <label>@userLabel</label>
+                                <span class="modal-close" @onclick='() =>showUserPopup=!showUserPopup'>✖</span>
+                            </div>
+                            <div class="modal-body">
+                                <p style="color: red; font-style: italic;">@error</p>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <label>First Name:</label>
+                                        <br>
+                                        <input @bind-value=@user_Model.FirstName>
+                                    </div>
+                                    <div class="col-12">
+                                        <label>Last Name:</label>
+                                        <br>
+                                        <input @bind-value=@user_Model.LastName>
+                                    </div>
+                                    <div class="col-6">
+                                        <label>Cell No:</label>
+                                        <br>
+                                        <input @bind-value=@user_Model.CellNo>
+                                    </div>
+                                    <div class="col-6">
+                                        <label>Email:</label>
+                                        <br>
+                                        <input @bind-value=@user_Model.Email>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div style="float: right;">
+                                            <button style="width: 100px;" @onclick=@SaveUser_Click>Save</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showUserGroupPopup)
+{
+    <div class="modal" style="display:block;">
+        <div class="PopupCentered">
+            <div class="PopupCenteredHelper">
+                <div class="modal-dialog" style="max-width: 500px;">
+                    <div class="modal-content">
+                        <EditForm Model="@userGroup_Model">
+                            <DataAnnotationsValidator />
+                            <div class="modal-header">
+                                <label>@userLabel</label>
+                                <span class="modal-close" @onclick='() =>showUserGroupPopup=!showUserGroupPopup'>✖</span>
+                            </div>
+                            <div class="modal-body">
+                                <p style="color: red; font-style: italic;">@error</p>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <label>User:</label>
+                                        <br>
+                                        <select @bind=@userGroup_Model.UserID>
+                                            @if (userList != null)
+                                            {
+                                                foreach (var item in userList)
+                                                {
+                                                    <option value="@item.Id">@item.FirstName @item.LastName</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label>Access Group:</label>
+                                        <br>
+                                        <select @bind=@userGroup_Model.AccessGroupID>
+                                            @if (accessGroupList != null)
+                                            {
+                                                foreach (var item in accessGroupList)
+                                                {
+                                                    <option value="@item.AccessGroupID">@item.Name</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div style="float: right;">
+                                            <button style="width: 100px;" @onclick=@SaveUserGroup_Click>Save</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showConfirmDelete)
+{
+    <div class="modal" style="display:block;">
+        <div class="PopupCentered">
+            <div class="PopupCenteredHelper">
+                <div class="modal-dialog" style="max-width: 370px;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <label>Confirm Remove</label>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure you would like to remove this entry?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <div class="row">
+                                <div class="col-6">
+                                    <button style="width: 100px;" @onclick=@RemoveEntry_No>No</button>
+                                </div>
+                                <div class="col-6">
+                                    <div style="float: right;">
+                                        <button style="width: 100px;" @onclick=@RemoveEntry_Confirmed>Yes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    int removeUserID = 0;
+    int removeUserGroupID = 0;
+    bool showUserPopup = false;
+    bool showUserGroupPopup = false;
+    bool showConfirmDelete = false;
+    string error = "";
+    string userLabel = "";
+
+    User user_Model;
+    UserGroup userGroup_Model;
+
+    private List<AccessGroup> accessGroupList;
+    private List<User> userList;
+    private List<UserGroup> userGroupList;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await LoadAccessGroups();
+        await LoadUsers();
+        await LoadUserGroups();
+    }
+
+    private async Task LoadAccessGroups()
+    {
+        accessGroupList = await http.GetFromJsonAsync<List<AccessGroup>>("api/ManageUsers/GetAccessGroups/");
+    }
+
+    private async Task LoadUsers()
+    {
+        userList = await http.GetFromJsonAsync<List<User>>("api/ManageUsers/GetUsers/");
+    }
+
+    private async Task LoadUserGroups()
+    {
+        userGroupList = await http.GetFromJsonAsync<List<UserGroup>>("api/ManageUsers/GetUserGroups/");
+    }
+
+    private void AddUser_Click()
+    {
+        user_Model = new User();
+
+        error = "";
+        userLabel = "Add User";
+        showUserPopup = true;
+    }
+
+    private void AddUserGroup_Click()
+    {
+        userGroup_Model = new UserGroup();
+
+        error = "";
+        userLabel = "Assign User To Group";
+        showUserGroupPopup = true;
+    }
+
+    private void UpdateUser_Click(User item)
+    {
+        user_Model = item;
+
+        error = "";
+        userLabel = "Edit User";
+        showUserPopup = true;
+    }
+
+    private void UpdateUserGroup_Click(UserGroup item)
+    {
+        userGroup_Model = item;
+
+        error = "";
+        userLabel = "Edit User Group";
+        showUserGroupPopup = true;
+    }
+
+    private void RemoveUser_Click(int removeID)
+    {
+        removeUserID = removeID;
+
+        showConfirmDelete = true;
+    }
+
+    private void RemoveUserGroup_Click(int removeID)
+    {
+        removeUserGroupID = removeID;
+
+        showConfirmDelete = true;
+    }
+
+    private async void SaveUser_Click()
+    {
+        if (string.IsNullOrEmpty(user_Model.FirstName) || string.IsNullOrEmpty(user_Model.LastName) || string.IsNullOrEmpty(user_Model.CellNo) || string.IsNullOrEmpty(user_Model.Email))
+        {
+            error = "Please provide all the necessary fields";
+            return;
+        }
+
+        var response = new ServerErrorDto();
+
+        if (user_Model.Id == 0)
+        {
+            var server = await http.PostAsJsonAsync("api/ManageUsers/CreateUser", user_Model);
+            response = await server.Content.ReadFromJsonAsync<ServerErrorDto>();
+        }
+        else if (user_Model.Id > 0)
+        {
+            var server = await http.PutAsJsonAsync("api/ManageUsers/UpdateUser", user_Model);
+            response = await server.Content.ReadFromJsonAsync<ServerErrorDto>();
+        }
+
+        if (response.Success)
+        {
+            await OnInitializedAsync();
+
+            showUserPopup = false;
+        }
+        else
+        { error = response.Error; }
+
+        StateHasChanged();
+    }
+
+    private async void SaveUserGroup_Click()
+    {
+        if (!(userGroup_Model.UserID > 0 && userGroup_Model.AccessGroupID > 0))
+        {
+            error = "Please provide all the necessary fields";
+            return;
+        }
+
+        var response = new ServerErrorDto();
+
+        if (userGroup_Model.Id == 0)
+        {
+            var server = await http.PostAsJsonAsync("api/ManageUsers/CreateUserGroup", userGroup_Model);
+            response = await server.Content.ReadFromJsonAsync<ServerErrorDto>();
+        }
+        else if (userGroup_Model.Id > 0)
+        {
+            var server = await http.PutAsJsonAsync("api/ManageUsers/UpdateUserGroup", userGroup_Model);
+            response = await server.Content.ReadFromJsonAsync<ServerErrorDto>();
+        }
+
+        if (response.Success)
+        {
+            await OnInitializedAsync();
+
+            showUserGroupPopup = false;
+        }
+        else
+        { error = response.Error; }
+
+        StateHasChanged();
+    }
+
+    private void RemoveEntry_No()
+    {
+        removeUserID = 0;
+        removeUserGroupID = 0;
+
+        showConfirmDelete = false;
+    }
+
+    private async void RemoveEntry_Confirmed()
+    {
+        if (removeUserID > 0)
+        {
+            await http.DeleteAsync("api/ManageUsers/DeleteUser/?id=" + removeUserID);
+
+            removeUserID = 0;
+        }
+        else if (removeUserGroupID > 0)
+        {
+            await http.DeleteAsync("api/ManageUsers/DeleteUserGroup/?id=" + removeUserGroupID);
+
+            removeUserGroupID = 0;
+        }
+
+        await OnInitializedAsync();
+
+        showConfirmDelete = false;
+
+        StateHasChanged();
+    }
+}
